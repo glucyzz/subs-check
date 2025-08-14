@@ -60,6 +60,7 @@ type Config struct {
 	APIKey               string   `yaml:"api-key"`
 	GithubProxy          string   `yaml:"github-proxy"`
 	CallbackScript       string   `yaml:"callback-script"`
+	Socks5Proxy          string   `yaml:"socks5-proxy"`
 }
 
 var GlobalConfig = &Config{

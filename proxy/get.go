@@ -17,6 +17,7 @@ import (
     "github.com/beck-8/subs-check/utils"
     "github.com/metacubex/mihomo/common/convert"
     "gopkg.in/yaml.v3"
+    "golang.org/x/net/proxy"
 )
 
 func GetProxies() ([]map[string]any, error) {
@@ -197,8 +198,31 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 	}
 	var lastErr error
 
+	// 创建HTTP客户端，支持SOCKS5代理
+	transport := &http.Transport{}
+	
+	// 如果配置了SOCKS5代理，则使用代理
+	if config.GlobalConfig.Socks5Proxy != "" {
+		slog.Debug("使用SOCKS5代理获取订阅", "proxy", config.GlobalConfig.Socks5Proxy)
+		
+		proxyURL, err := u.Parse(config.GlobalConfig.Socks5Proxy)
+		if err != nil {
+			return nil, fmt.Errorf("无效的SOCKS5代理URL: %w", err)
+		}
+		
+		// 创建SOCKS5代理拨号器
+		dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+		if err != nil {
+			return nil, fmt.Errorf("创建SOCKS5代理失败: %w", err)
+		}
+		
+		// 设置代理拨号器
+		transport.DialContext = dialer.(proxy.ContextDialer).DialContext
+	}
+
 	client := &http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
+		Timeout:   time.Duration(timeout) * time.Second,
+		Transport: transport,
 	}
 
 	for i := 0; i < maxRetries; i++ {
